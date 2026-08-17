@@ -1,0 +1,16 @@
+{
+  "short_name": "Jídelníček",
+  "name": "Jídelníček",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "ikona-app.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
