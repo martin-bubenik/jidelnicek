@@ -45,7 +45,7 @@ const RECIPES = {
     martinMacros:{kcal:390,p:33,f:1,c:59}, wifeMacros:{kcal:335,p:28,f:1,c:50},
     ingredients:["Denně: 200 g jogurt, 15 g whey, 150 g lesního ovoce, 48 g cornflakes","Manž. denně: 170 g jogurt, 12 g whey, 150 g lesního ovoce, 38 g cornflakes"],
     steps:["Umíchej 1 kg řeckého jogurtu 0 % s cca 77 g whey proteinu – tohle je zásoba na B5 (St) i B5t (Čt) pro oba",
-      "Do misky nasyp jogurtovou směs, navrch dej lesní ovoce a cornflakes zvlášť do sáčku"], note: ESTIMATE_NOTE },
+      "Do misky nasyp jogurt, navrch dej lesní ovoce a cornflakes zvlášť do sáčku"], note: ESTIMATE_NOTE },
   B5t: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes (menší porce)", category:"snídaně", desc:"Čt – menší porce ze stejné dávky co St (viz B5), protože oběd ten den zůstává plný a večeře je objednaná mimo evidenci.",
     martinMacros:{kcal:250,p:22,f:1,c:37}, wifeMacros:{kcal:215,p:19,f:1,c:31},
     ingredients:["Denně: 140 g jogurt, 10 g whey, 100 g lesního ovoce, 25 g cornflakes","Manž. denně: 120 g jogurt, 8 g whey, 100 g lesního ovoce, 20 g cornflakes"],
@@ -78,7 +78,7 @@ const RECIPES = {
   S3: { name:"jogurt s lesním ovocem a piškoty", category:"svačina", desc:"Po+Út odpoledne. Příprava v neděli na 2 dny.",
     martinMacros:{kcal:270,p:28,f:2,c:34}, wifeMacros:{kcal:230,p:24,f:2,c:29},
     ingredients:["Denně: 180 g jogurt, 15 g whey, 100 g lesního ovoce, 20 g piškotů","Manž. denně: 160 g jogurt, 12 g whey, 100 g lesního ovoce, 15 g piškotů"],
-    steps:["Celkem na 2 dny: 680 g jogurtové směsi, 400 g lesního ovoce, 70 g piškotů",
+    steps:["Celkem na 2 dny: 680 g jogurtu, 400 g lesního ovoce, 70 g piškotů",
       "Rozděl jogurt s ovocem do 4 krabiček, piškoty vlož zvlášť do sáčků"], note: ESTIMATE_NOTE },
   S2t: { name:"Sýrové rolky se zeleninou (menší porce)", category:"svačina", desc:"Čt – menší porce ze stejné dávky co St, protože oběd ten den zůstává plný a večeře je objednaná mimo evidenci.",
     martinMacros:{kcal:205,p:16,f:15,c:8}, wifeMacros:{kcal:205,p:18,f:13,c:7},
@@ -216,7 +216,7 @@ const SHOPPING_WEEKS = [
   { label:"Týden 1", sub:"Toast/jogurt/kaše + kuře na rajčatech → žervé, víkend: vepřové nudličky + quesadilla", categories:{
       "🥩 Maso a ryby": ["Kuřecí prsa (na rajčatech) 900 g","Vepřová kýta (nudličky, víkend + čtvrtek) 870 g","Šunka od kosti (jen manželka) 210 g"],
       "🥛 Mléčné a vejce": ["Eidam 30% 670 g","Vejce – 14 ks (z toho 3 volská)","Nízkotučný tvaroh 500 g","Žervé – 160 g",
-        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g (z toho ~94 g na jogurtovou směs)","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
+        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
       "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Těstoviny 600 g","Rýže syrová 420 g","Ovesné vločky 120 g","Bagely – 2 ks","Tortilla velká – 2 ks","Tortilla malá – 2 ks"],
       "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
         "Lesní ovoce – čerstvé nebo mražené 900 g","Čerstvé ovoce (do pudinku, kaše) cca 340 g + dle chuti k lívancům","Banány – 4 ks","Vlašské ořechy 90 g",
@@ -224,7 +224,7 @@ const SHOPPING_WEEKS = [
     }},
   { label:"Týden 2", sub:"Toast/jogurt/kaše + losos → tuňák, víkend: zapečené těstoviny se špenátem + těstovinový salát", categories:{
       "🥩 Maso a ryby": ["Losos 1 155 g","Kuřecí prsa (zapečené těstoviny, víkend + čtvrtek) 765 g","Tuňák ve vlastní šťávě (slitý) – cca 200 g","Šunka od kosti (jen manželka) 170 g"],
-      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 16 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g (z toho ~94 g na jogurtovou směs)",
+      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 16 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g",
         "Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Krupice na kaši 95 g"],
       "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Těstoviny 721 g","Ovesné vločky 120 g","Bagely – 2 ks"],
       "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
@@ -234,7 +234,7 @@ const SHOPPING_WEEKS = [
   { label:"Týden 3", sub:"Toast/jogurt/kaše + gyros → žervé, víkend: kuřecí kuličky s pyré + quesadilla", categories:{
       "🥩 Maso a ryby": ["Kuřecí prsa (gyros) 795 g","Mletá kuřecí prsa (kuličky, víkend + čtvrtek) 840 g","Šunka od kosti (jen manželka) 210 g"],
       "🥛 Mléčné a vejce": ["Eidam 30% 670 g","Vejce – 14 ks (z toho 3 volská)","Nízkotučný tvaroh 500 g","Žervé 160 g",
-        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g (z toho ~94 g na jogurtovou směs)","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
+        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
       "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Bulgur syrový 720 g","Ovesné vločky 120 g","Bagely – 2 ks","Tortilla velká – 2 ks","Tortilla malá – 2 ks"],
       "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
         "Brambory syrové – cca 1,35 kg","Lesní ovoce – čerstvé nebo mražené 900 g","Čerstvé ovoce (do pudinku, kaše) cca 340 g + dle chuti k lívancům","Banány – 4 ks","Vlašské ořechy 90 g",
@@ -242,7 +242,7 @@ const SHOPPING_WEEKS = [
     }},
   { label:"Týden 4", sub:"Toast/jogurt/kaše + kari → hovězí chilli, víkend: hovězí chilli + těstovinový salát", categories:{
       "🥩 Maso a ryby": ["Kuřecí prsa (kari) 735 g","Mleté hovězí libové 930 g","Tuňák ve vlastní šťávě (slitý) – cca 200 g","Šunka od kosti (jen manželka) 170 g"],
-      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 12 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g (z toho ~94 g na jogurtovou směs)",
+      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 12 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g",
         "Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Krupice na kaši 95 g"],
       "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Rýže syrová 660 g","Ovesné vločky 120 g","Bagely – 2 ks","Těstoviny 235 g"],
       "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
