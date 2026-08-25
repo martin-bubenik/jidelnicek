@@ -25,7 +25,6 @@ const { useState, useMemo } = React;
 
 // v27: Obědy přeskládané mezi týdny, aby se v jednom týdnu neopakovala stejná příloha ani rajčatový základ (týden 1: kuře na rajčatech+nudličky, týden 2: losos+těstoviny, týden 3: gyros+kuličky, týden 4: kari+chilli).
 // Makra dopočtená z reálných výživových hodnot surovin (ne odhad) – viz makra u jednotlivých receptů.
-// Jogurtová směs = 1 kg řeckého jogurtu 0 % tuku + cca 77 g whey proteinu vmíchaného najednou (NE tvaroh/jogurt mix).
 // Snídaně+svačina se chystají na 2 dny dopředu (Po+Út v neděli, St+Čt v úterý), Pá jen na 1 den (ve čtvrtek/pátek ráno), víkend čerstvě.
 // Čt: stejný oběd jako víkend (nic se neváží zvlášť), místo toho menší B5t+S2t ze stejné dávky co St.
 // Jen 1 svačina denně (odpoledne), žádná svačina se neopakuje víc než 2 dny po sobě ani 3x v týdnu.
@@ -42,14 +41,14 @@ const RECIPES = {
     ingredients:["Denně: 2 toasty, 2 vejce, 40 g Eidam 30%, 150 g zeleniny","Manž. denně: 2 toasty, 2 vejce, 30 g Eidam 30%, 150 g zeleniny"],
     steps:["Celkem na 2 dny (4 porce): 8 toastů, 8 vajec, 140 g Eidamu, 600 g zeleniny",
       "Vejce upeč, toasty naplň"], note: ESTIMATE_NOTE },
-  B5: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes", category:"snídaně", desc:"St. Jogurtová směs = 1 kg řeckého jogurtu 0% + cca 77 g whey vmíchaného najednou. Připrav v úterý na zásobu (vydrží i na Čt v menší porci).",
+  B5: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes", category:"snídaně", desc:"Připrav v úterý na zásobu (vydrží i na Čt v menší porci).",
     martinMacros:{kcal:390,p:33,f:1,c:59}, wifeMacros:{kcal:335,p:28,f:1,c:50},
-    ingredients:["Denně: 200 g jogurtová směs, 15 g whey, 150 g lesního ovoce, 48 g cornflakes","Manž. denně: 170 g jogurtová směs, 12 g whey, 150 g lesního ovoce, 38 g cornflakes"],
+    ingredients:["Denně: 200 g jogurt, 15 g whey, 150 g lesního ovoce, 48 g cornflakes","Manž. denně: 170 g jogurt, 12 g whey, 150 g lesního ovoce, 38 g cornflakes"],
     steps:["Umíchej 1 kg řeckého jogurtu 0 % s cca 77 g whey proteinu – tohle je zásoba na B5 (St) i B5t (Čt) pro oba",
       "Do misky nasyp jogurtovou směs, navrch dej lesní ovoce a cornflakes zvlášť do sáčku"], note: ESTIMATE_NOTE },
   B5t: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes (menší porce)", category:"snídaně", desc:"Čt – menší porce ze stejné dávky co St (viz B5), protože oběd ten den zůstává plný a večeře je objednaná mimo evidenci.",
     martinMacros:{kcal:250,p:22,f:1,c:37}, wifeMacros:{kcal:215,p:19,f:1,c:31},
-    ingredients:["Denně: 140 g jogurtová směs, 10 g whey, 100 g lesního ovoce, 25 g cornflakes","Manž. denně: 120 g jogurtová směs, 8 g whey, 100 g lesního ovoce, 20 g cornflakes"],
+    ingredients:["Denně: 140 g jogurt, 10 g whey, 100 g lesního ovoce, 25 g cornflakes","Manž. denně: 120 g jogurt, 8 g whey, 100 g lesního ovoce, 20 g cornflakes"],
     steps:["Nabereš menší porci ze stejné úterní dávky (viz B5) – nic navíc se nevaří ani neváží zvlášť"], note: ESTIMATE_NOTE },
   B6: { name:"Míchaná vejce s cottage, chlebem a zeleninou", category:"snídaně", desc:"Víkendová snídaně (rotace s B7/B8/B9). Příprava čerstvě.",
     martinMacros:{kcal:475,p:40,f:18,c:35}, wifeMacros:{kcal:390,p:32,f:13,c:31},
@@ -76,9 +75,9 @@ const RECIPES = {
     martinMacros:{kcal:295,p:24,f:21,c:9}, wifeMacros:{kcal:280,p:22,f:20,c:8},
     ingredients:["Denně: 70 g Eidam 30%, 15 g ořechů, 150 g zeleniny (bez šunky)","Manž. denně: 35 g Eidam 30%, 30 g šunka, 20 g ořechů, 150 g zeleniny"],
     steps:["Sýr nakrájej na kostky, přidej ořechy a zeleninu, rozděl do krabiček (šunka jen pro manželku)"], note: ESTIMATE_NOTE },
-  S3: { name:"Jogurtová směs s lesním ovocem a piškoty", category:"svačina", desc:"Po+Út odpoledne. Příprava v neděli na 2 dny.",
+  S3: { name:"jogurt s lesním ovocem a piškoty", category:"svačina", desc:"Po+Út odpoledne. Příprava v neděli na 2 dny.",
     martinMacros:{kcal:270,p:28,f:2,c:34}, wifeMacros:{kcal:230,p:24,f:2,c:29},
-    ingredients:["Denně: 180 g jogurtová směs, 15 g whey, 100 g lesního ovoce, 20 g piškotů","Manž. denně: 160 g jogurtová směs, 12 g whey, 100 g lesního ovoce, 15 g piškotů"],
+    ingredients:["Denně: 180 g jogurt, 15 g whey, 100 g lesního ovoce, 20 g piškotů","Manž. denně: 160 g jogurt, 12 g whey, 100 g lesního ovoce, 15 g piškotů"],
     steps:["Celkem na 2 dny: 680 g jogurtové směsi, 400 g lesního ovoce, 70 g piškotů",
       "Rozděl jogurt s ovocem do 4 krabiček, piškoty vlož zvlášť do sáčků"], note: ESTIMATE_NOTE },
   S2t: { name:"Sýrové rolky se zeleninou (menší porce)", category:"svačina", desc:"Čt – menší porce ze stejné dávky co St, protože oběd ten den zůstává plný a večeře je objednaná mimo evidenci.",
@@ -212,7 +211,7 @@ const WEEKS = [
 ];
 
 // Pevný všednodenní blok (toast+jogurt/piškoty Po/Út, jogurt+sýr St, menší jogurt/sýr Čt, kaše+puding Pá) je stejný každý týden.
-// "Jogurtová směs" = 1 kg řeckého jogurtu 0% + cca 77 g whey vmíchaného najednou – kupuj jogurt a whey zvlášť, namíchá se doma.
+// "jogurt" = 1 kg řeckého jogurtu 0% + cca 77 g whey vmíchaného najednou – kupuj jogurt a whey zvlášť, namíchá se doma.
 const SHOPPING_WEEKS = [
   { label:"Týden 1", sub:"Toast/jogurt/kaše + kuře na rajčatech → žervé, víkend: vepřové nudličky + quesadilla", categories:{
       "🥩 Maso a ryby": ["Kuřecí prsa (na rajčatech) 900 g","Vepřová kýta (nudličky, víkend + čtvrtek) 870 g","Šunka od kosti (jen manželka) 210 g"],
