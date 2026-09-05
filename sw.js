@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jidelnicek-v13'; // Vždy zvyšte verzi při změně
+const CACHE_NAME = 'jidelnicek-v12'; // Vždy zvyšte verzi při změně
 const ASSETS = [
   '/',
   '/index.html',

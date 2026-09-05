@@ -3,137 +3,253 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jídelníček Builder</title>
+<title>Jídelníček</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; }
+  body { margin: 0; }
 </style>
 <!-- Standardní ikona a manifest -->
-<link rel="manifest" href="/manifest.json?v=3" />
-<link rel="icon" type="image/png" href="/ikona-app.png?v=3" />
-<link rel="apple-touch-icon" href="/ikona-app.png?v=3" />
+<link rel="manifest" href="/manifest.json?v=2" />
+<link rel="icon" type="image/png" href="/ikona-app.png?v=2" />
+
+<!-- KANONICKÁ IKONA PRO SAFARI / APPLE (Nutnost pro plochu iOS) -->
+<link rel="apple-touch-icon" href="/ikona-app.png?v=2" />
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const { useState, useMemo, useEffect } = React;
+const { useState, useMemo } = React;
 
-const ESTIMATE_NOTE = "Makra jsou přibližný odhad.";
+// v27: Obědy přeskládané mezi týdny, aby se v jednom týdnu neopakovala stejná příloha ani rajčatový základ (týden 1: kuře na rajčatech+nudličky, týden 2: losos+těstoviny, týden 3: gyros+kuličky, týden 4: kari+chilli).
+// Makra dopočtená z reálných výživových hodnot surovin (ne odhad) – viz makra u jednotlivých receptů.
+// Snídaně+svačina se chystají na 2 dny dopředu (Po+Út v neděli, St+Čt v úterý), Pá jen na 1 den (ve čtvrtek/pátek ráno), víkend čerstvě.
+// Čt: stejný oběd jako víkend (nic se neváží zvlášť), místo toho menší B5t+S2t ze stejné dávky co St.
+// Jen 1 svačina denně (odpoledne), žádná svačina se neopakuje víc než 2 dny po sobě ani 3x v týdnu.
+// Po+Út: B2 (toast, Martin 2 vejce) + S3 (jogurt+piškoty) | St: B5 (jogurt) + S2 (sýr) | Čt: B5t+S2t (menší) | Pá: B10 (kaše) + S8 (protein puding, jen 1x)
+// Martin: bez šunky. Manželka: šunka zůstává.
+// Čt a Pá mají jeden chod neevidovaný (objednávka / restaurace) – zbylé chody jsou proto o cca 200 kcal nižší než plný den.
+// Cílové kalorie/bílkoviny (plné dny): Martin 1750–1900 kcal / 130–145 g B, Manželka 1550–1700 kcal / 100–115 g B.
+
+const ESTIMATE_NOTE = "Makra jsou přibližný odhad."; // Ponecháno z tvého původního kódu
 
 const RECIPES = {
-  B2: { name:"Toastový sendvič s vejcem a sýrem", category:"snídaně", desc:"Toast se 2 vejci a sýrem.",
+  B2: { name:"Toastový sendvič s vejcem a sýrem", category:"snídaně", desc:"Po+Út. Příprava v neděli na 2 dny dopředu.",
     martinMacros:{kcal:378,p:27,f:20,c:22}, wifeMacros:{kcal:365,p:25,f:18,c:23},
-    ingredients:["2 toasty","2 vejce","40 g Eidam 30%"],
-    steps:["Vejce upeč, toasty naplň"], note: ESTIMATE_NOTE },
-  B5: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes", category:"snídaně", desc:"Jogurt se proteinem a ovocem.",
+    ingredients:["Denně: 2 toasty, 2 vejce, 40 g Eidam 30%","Manž. denně: 2 toasty, 2 vejce, 30 g Eidam 30%"],
+    steps:["Celkem na 2 dny (4 porce): 8 toastů, 8 vajec, 140 g Eidamu",
+      "Vejce upeč, toasty naplň"], note: ESTIMATE_NOTE },
+  B5: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes", category:"snídaně", desc:"Připrav v úterý na zásobu (vydrží i na Čt v menší porci).",
     martinMacros:{kcal:426,p:38,f:2,c:61}, wifeMacros:{kcal:362,p:31,f:1,c:52},
-    ingredients:["200 g jogurt","15 g whey","100 g lesního ovoce","48 g cornflakes"],
-    steps:["Umíchej jogurt s whey, přidej ovoce a cornflakes"], note: ESTIMATE_NOTE },
-  B5t: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes (menší porce)", category:"snídaně", desc:"Menší porce jogurtu se proteinem.",
+    ingredients:["Denně: 200 g jogurt, 15 g whey, 100 g lesního ovoce, 48 g cornflakes","Manž. denně: 170 g jogurt, 12 g whey, 100 g lesního ovoce, 38 g cornflakes"],
+    steps:["Umíchej 1 kg řeckého jogurtu 0 % s cca 77 g whey proteinu – tohle je zásoba na B5 (St) i B5t (Čt) pro oba",
+      "Do misky nasyp jogurt, navrch dej lesní ovoce a cornflakes zvlášť do sáčku"], note: ESTIMATE_NOTE },
+  B5t: { name:"Řecký jogurt 0% s whey, lesním ovocem a cornflakes (menší porce)", category:"snídaně", desc:"Čt – menší porce ze stejné dávky co St (viz B5), protože oběd ten den zůstává plný a večeře je objednaná mimo evidenci.",
     martinMacros:{kcal:272,p:26,f:1,c:39}, wifeMacros:{kcal:235,p:22,f:1,c:33},
-    ingredients:["140 g jogurt","10 g whey","100 g lesního ovoce","25 g cornflakes"],
-    steps:["Nabereš menší porci ze stejné dávky co B5"], note: ESTIMATE_NOTE },
-  B6: { name:"Míchaná vejce s cottage, chlebem a zeleninou", category:"snídaně", desc:"Vejce s cottage sýrem.",
+    ingredients:["Denně: 140 g jogurt, 10 g whey, 100 g lesního ovoce, 25 g cornflakes","Manž. denně: 120 g jogurt, 8 g whey, 100 g lesního ovoce, 20 g cornflakes"],
+    steps:["Nabereš menší porci ze stejné úterní dávky (viz B5) – nic navíc se nevaří ani neváží zvlášť"], note: ESTIMATE_NOTE },
+  B6: { name:"Míchaná vejce s cottage, chlebem a zeleninou", category:"snídaně", desc:"Víkendová snídaně (rotace s B7/B8/B9). Příprava čerstvě.",
     martinMacros:{kcal:446,p:38,f:17,c:38}, wifeMacros:{kcal:345,p:29,f:12,c:30},
-    ingredients:["3 vejce","100 g cottage","2 krajíce chleba"],
-    steps:["Připrav vejce s cottage, podávej s chlebem"], note: ESTIMATE_NOTE },
-  B7: { name:"Volské oko v bagelu se sýrem a zeleninou", category:"snídaně", desc:"Volské oko v bagelu.",
+    ingredients:["Porce: 3 vejce, 100 g cottage, 2 krajíce chleba","Manž.: 2 vejce, 100 g cottage, 1,5 krajíce chleba"],
+    steps:["Připrav vejce s cottage, podávej s chlebem a zeleninou"], note: ESTIMATE_NOTE },
+  B7: { name:"Volské oko v bagelu se sýrem a zeleninou (Martin bez šunky)", category:"snídaně", desc:"Víkendová snídaně (rotace s B6/B8/B9). Příprava čerstvě.",
     martinMacros:{kcal:507,p:30,f:21,c:46}, wifeMacros:{kcal:418,p:27,f:13,c:45},
-    ingredients:["1 bagel","2 volská vejce","30 g Eidam 30%"],
-    steps:["Upeč vejce a bagely naplň"], note: ESTIMATE_NOTE },
-  B8: { name:"Proteinová krupicová kaše s lesním ovocem", category:"snídaně", desc:"Krupicová kaše se proteinem.",
+    ingredients:["Porce: 1 bagel, 2 volská vejce, 30 g Eidam 30% (bez šunky)","Manž.: 1 bagel, 1 volské vejce, 20 g Eidam 30%, 30 g šunka"],
+    steps:["Upeč vejce a bagely naplň (šunka jen pro manželku)"], note: ESTIMATE_NOTE },
+  B8: { name:"Proteinová krupicová kaše s lesním ovocem", category:"snídaně", desc:"Víkendová snídaně (rotace s B6/B7/B9). Příprava čerstvě.",
     martinMacros:{kcal:479,p:36,f:5,c:71}, wifeMacros:{kcal:355,p:26,f:4,c:54},
-    ingredients:["280 ml mléko","55 g krupice","25 g whey","120 g ovoce"],
-    steps:["Uvař krupici v mléce, vmíchej whey, posyp ovocem"], note: ESTIMATE_NOTE },
-  B9: { name:"Proteinové lívance s lesním ovocem", category:"snídaně", desc:"Proteinové lívance.",
+    ingredients:["Porce: 280 ml mléko, 55 g krupice, 25 g whey, 120 g ovoce","Manž.: 220 ml mléko, 40 g krupice, 15 g whey, 120 g ovoce"],
+    steps:["Uvař krupici v mléce, po odstavení vmíchej whey, posyp ovocem"], note: ESTIMATE_NOTE },
+  B9: { name:"Proteinové lívance s lesním ovocem", category:"snídaně", desc:"Víkendová snídaně (rotace s B6/B7/B8). Příprava čerstvě.",
     martinMacros:{kcal:455,p:45,f:12,c:40}, wifeMacros:{kcal:457,p:29,f:6,c:48},
-    ingredients:["150 g tvaroh","2 vejce","35 g mouka","10 g whey","100 g ovoce"],
-    steps:["Upeč lívance, ozdob ovocem"], note: ESTIMATE_NOTE },
-  B10: { name:"Ovesná kaše s proteinem a ovocem", category:"snídaně", desc:"Ovesná kaše.",
+    ingredients:["Porce: 150 g tvaroh, 2 vejce, 35 g mouka, 10 g whey, 100 g ovoce","Manž.: 100 g tvaroh, 1 vejce, 45 g mouka, 100 g ovoce"],
+    steps:["Upeč lívance, whey vmíchej jen do Martinovy poloviny těsta, ozdob a ovocem"], note: ESTIMATE_NOTE },
+  B10: { name:"Ovesná kaše s proteinem a ovocem", category:"snídaně", desc:"Pátek. Příprava ve čtvrtek večer nebo čerstvě v pátek ráno.",
     martinMacros:{kcal:523,p:39,f:9,c:71}, wifeMacros:{kcal:349,p:26,f:6,c:47},
-    ingredients:["72 g ovesných vloček","270 ml mléko","24 g whey","72 g ovoce"],
-    steps:["Uvař vločky v mléce, vmíchej whey, posyp ovocem"], note: ESTIMATE_NOTE },
+    ingredients:["Porce: 72 g ovesných vloček, 270 ml polotučné mléko, 24 g whey, 72 g ovoce","Manž.: 48 g ovesných vloček, 180 ml polotučné mléko, 16 g whey, 48 g ovoce"],
+    steps:["Uvař vločky v mléce do zhoustnutí. Stáhni z plotny, vmíchej whey (jinak se srazí), posyp ovocem. Rozděl 60 % a 40 %."], note: ESTIMATE_NOTE },
 
-  S2: { name:"Sendvič", category:"svačina", desc:"Sendvič s tuňákem nebo šunkou.",
+  S2: { name:"Sendvič", category:"svačina", desc:"St odpoledne. Připrav v úterý – zásoba vydrží i na čtvrteční menší porci (S2t).",
     martinMacros:{kcal:300,p:28,f:9,c:30}, wifeMacros:{kcal:260,p:22,f:8,c:28},
-    ingredients:["2 plátky chleba","70 g tuňáka","20 g Eidam 30%","50 g zeleniny"],
-    steps:["Připrav sendvič"], note: ESTIMATE_NOTE },
-  S3: { name:"Mandle + banán", category:"svačina", desc:"Mandle a banán.",
+    ingredients:["Denně: 2 plátky chleba, 70 g tuňáka ve vlastní šťávě, 20 g Eidam 30%, 15 g žervé, 50 g zeleniny, 5 g hořčice","Manž. denně: 2 plátky chleba, 50 g sunky, 20 g Eidam 30%, 15 g žervé, 50 g zeleniny, 5 g hořčice"],
+    steps:["Připrav sendviče"], note: ESTIMATE_NOTE },
+  S3: { name:"Mandle + banán", category:"svačina", desc:"Po+Út odpoledne. Příprava v neděli na 2 dny.",
     martinMacros:{kcal:392,p:11,f:24,c:37}, wifeMacros:{kcal:353,p:10,f:21,c:35},
-    ingredients:["49 g mandle","1 banán"],
-    steps:["Podávej jako svačinu"], note: ESTIMATE_NOTE },
-  S6: { name:"Banánové mléko s whey", category:"svačina", desc:"Banánový protein shake.",
+    ingredients:["Denně: 49 g mandle, 1 banán","Manž. denně: 42 g mandle, 1 banán"],
+    steps:["Celkem na 2 dny: 182 g mandle, 4 banány"], note: ESTIMATE_NOTE },
+  S6: { name:"Banánové mléko s whey", category:"svačina", desc:"Víkend (So+Ne). Příprava na 2 dny.",
     martinMacros:{kcal:319,p:31,f:5,c:40}, wifeMacros:{kcal:284,p:27,f:4,c:38},
-    ingredients:["260 ml mléko","1 banán","26 g whey"],
-    steps:["Rozmixuj a přelij do shakeru"], note: ESTIMATE_NOTE },
-  S8: { name:"Protein puding s ořechy a ovocem", category:"svačina", desc:"Puding se svěžím ovocem.",
+    ingredients:["Denně: 260 ml polotučné mléko, 1 banán, 26 g whey","Manž. denně: 230 ml polotučné mléko, 1 banán, 22 g whey"],
+    steps:["Celkem na 2 dny: 980 ml mléka, 4 banány, 96 g whey proteinu",
+      "Rozmixuj a přelij do shakerů"], note: ESTIMATE_NOTE },
+  S8: { name:"Protein puding s ořechy a ovocem", category:"svačina", desc:"Pátek odpoledne, jen 1x týdně. Bez vaření – jen otevřít kelímek.",
     martinMacros:{kcal:330,p:26,f:16,c:24}, wifeMacros:{kcal:300,p:25,f:14,c:24},
-    ingredients:["200 g protein pudingu","20 g ořechů","60 g ovoce"],
+    ingredients:["1 kelímek (200 g) protein pudingu, 20 g ořechů, 60 g ovoce","Manž.: 1 kelímek (200 g) protein pudingu, 15 g ořechů, 60 g ovoce"],
     steps:["Otevři kelímek, přidej ořechy a ovoce"], note: ESTIMATE_NOTE },
 
-  L1: { name:"Kuřecí gyros s bulgurem", category:"oběd", desc:"Kuřecí maso s bulgurem.",
+  L1: { name:"Kuřecí gyros s bulgurem", category:"oběd", desc:"Po+Út+St (týden 1). Vaří se na 3 dny.",
     martinMacros:{kcal:612,p:52,f:11,c:99}, wifeMacros:{kcal:509,p:37,f:11,c:84},
-    ingredients:["160 g kuřecího masa","130 g bulguru"],
-    steps:["Kuřecí maso orestuj s gyros kořením, bulgur uvař"], note: ESTIMATE_NOTE },
-  L3: { name:"Vepřové nudličky po asijsku s rýží", category:"oběd", desc:"Vepřové maso s rýží.",
+    ingredients:["Denně: Kuřecí prsa 160 g, 130 g syrového bulguru","Manž. denně: Kuřecí prsa 105 g, 110 g syrového bulguru"],
+    steps:["Kuřecí maso orestuj s gyros kořením, bulgur uvař",
+      "Celkem na 3 dny: 795 g kuřecího masa, 720 g bulguru"], note: ESTIMATE_NOTE },
+  L3: { name:"Vepřové nudličky po asijsku s rýží", category:"oběd", desc:"Čt+víkend (týden 1). Vaří se na 3 dny.",
     martinMacros:{kcal:502,p:40,f:13,c:60}, wifeMacros:{kcal:405,p:29,f:9,c:52},
-    ingredients:["170 g vepřové kýty","75 g rýže","9 ml sójové omáčky"],
-    steps:["Kýtu orestuj se sójovkou, rýži uvař"], note: ESTIMATE_NOTE },
-  L4: { name:"Kuřecí kari s rýží", category:"oběd", desc:"Kuřecí maso v kari omáčce.",
+    ingredients:["Denně: Vepřová kýta 170 g, 75 g rýže, 9 ml sójové omáčky","Manž. denně: Vepřová kýta 120 g, 65 g rýže, 6 ml sójové omáčky"],
+    steps:["Kýtu nakrájej, smíchej se sójovkou a orestuj",
+      "Celkem na 3 dny: 870 g masa, 420 g rýže, 900 g čerstvého salátu, 45 ml sójové omáčky"], note: ESTIMATE_NOTE },
+  L4: { name:"Kuřecí kari s rýží", category:"oběd", desc:"Po+Út+St (týden 2). Vaří se na 3 dny.",
     martinMacros:{kcal:684,p:43,f:18,c:97}, wifeMacros:{kcal:547,p:30,f:16,c:81},
-    ingredients:["150 g kuřecího masa","58 ml kokosového mléka","120 g rýže"],
-    steps:["Kuřecí prsa orestuj, zalij kokosovým mlékem a dus"], note: ESTIMATE_NOTE },
-  L5: { name:"Hovězí chilli con carne s čočkou", category:"oběd", desc:"Hovězí maso s fazolemi a čočkou.",
+    ingredients:["Denně: Kuřecí prsa 150 g, kokosové mléko 58 ml, rýže 120 g","Manž. denně: Kuřecí prsa 95 g, kokosové mléko 42 ml, rýže 100 g"],
+    steps:["Kuřecí prsa orestuj, zalij light kokosovým mlékem a dus",
+      "Celkem na 3 dny: 735 g kuřecího masa, 660 g rýže, 300 ml kokosového mléka"], note: ESTIMATE_NOTE },
+  L5: { name:"Hovězí chilli con carne s čočkou", category:"oběd", desc:"Čt+víkend (týden 4). Vaří se na 3 dny.",
     martinMacros:{kcal:573,p:53,f:16,c:35}, wifeMacros:{kcal:412,p:39,f:11,c:35},
-    ingredients:["180 g hovězího","120 g fazolí","45 g čočky","90 g passaty"],
-    steps:["Orestuj hovězí, zalij passatou, přidej fazole a čočku"], note: ESTIMATE_NOTE },
-  L6: { name:"Kuřecí kuličky s pyré", category:"oběd", desc:"Kuřecí kuličky s bramborami.",
+    ingredients:["Denně: Mleté hovězí (libové) 180 g, fazole 120 g, čočka 45 g, 90 g passaty","Manž. denně: Hovězí 130 g, fazole 100 g, čočka 35 g, 60 g passaty"],
+    steps:["Orestuj hovězí s kořením, zalij passatou, přidej fazole a čočku a dus",
+      "Celkem na 3 dny: 930 g hovězího, 660 g fazolí, 240 g čočky, 450 g passaty"], note: ESTIMATE_NOTE },
+  L6: { name:"Kuřecí kuličky s pyré", category:"oběd", desc:"Čt+víkend (týden 3). Vaří se na 3 dny.",
     martinMacros:{kcal:442,p:37,f:16,c:35}, wifeMacros:{kcal:338,p:29,f:12,c:28},
-    ingredients:["160 g mletého kuřecího masa","250 g brambor"],
-    steps:["Kuličky peč v troubě, z brambor udělej pyré"], note: ESTIMATE_NOTE },
-  L7: { name:"Pečený losos s bramborami a zeleninou", category:"oběd", desc:"Losos s bramborami.",
+    ingredients:["Denně: Mletá kuřecí prsa 160 g, brambory 250 g","Manž. denně: Mletá kuřecí prsa 120 g, brambory 200 g"],
+    steps:["Masové kuličky peč v troubě na 190 stupňu cca 20 minut. Z brambor udělej pyré",
+      "Celkem na 3 dny: 840 g masa, 1 350 g brambor"], note: ESTIMATE_NOTE },
+  L7: { name:"Pečený losos s bramborami, zeleninou", category:"oběd", desc:"Po+Út+St (týden 2). Vaří se na 3 dny.",
     martinMacros:{kcal:482,p:35,f:20,c:38}, wifeMacros:{kcal:364,p:28,f:16,c:25},
-    ingredients:["150 g lososa","100 g rajčat","197 g brambor"],
-    steps:["Upeč brambory se zeleninou, pak přidej lososa"], note: ESTIMATE_NOTE },
-  L8: { name:"Kuřecí kousky na rajčatech s těstovinami", category:"oběd", desc:"Kuřecí kousky v rajčatové omáčce.",
+    ingredients:["Denně: Losos 150 g, rajčata 100 g, brambory 197 g","Manž. denně: Losos 120 g, rajčata 100 g, brambory 125 g"],
+    steps:["Upeč brambory se zeleninou - 200 °C 25-30 minut, na závěr přidej lososa - 200 °C 12-15 minut",
+      "Celkem na 3 dny: 810 g lososa, 966 g brambor, 600 g pečené zeleniny"], note: ESTIMATE_NOTE },
+  L8: { name:"Kuřecí kousky na rajčatech s těstovinami", category:"oběd", desc:"Po+Út+St (týden 1). Vaří se na 3 dny.",
     martinMacros:{kcal:657,p:56,f:8,c:81}, wifeMacros:{kcal:552,p:41,f:6,c:75},
-    ingredients:["180 g kuřecího masa","100 g těstovin","80 g passaty"],
-    steps:["Kuřecí kousky orestuj, zalij passatou, těstoviny uvař zvlášť"], note: ESTIMATE_NOTE },
-  L9: { name:"Kuřecí na medovo-hořčičné šťávě s bramborami", category:"oběd", desc:"Kuřecí maso s medem a hořčicí.",
+    ingredients:["Denně: Kuřecí prsa 180 g, 100 g těstovin, 80 g passaty, 6 g olivového oleje","Manž. denně: Kuřecí prsa 120 g, 100 g těstovin, 45 g passaty, 5 g olivového oleje"],
+    steps:["Kuřecí kousky orestuj na oleji, zalij passatou a dus, těstoviny uvař zvlášť",
+      "Celkem na 3 dny: 900 g kuřecího masa, 600 g těstovin, 375 g passaty, 33 g oleje"], note: ESTIMATE_NOTE },
+  L9: { name:"Kuřecí na medovo-hořčičné šťávě s pečenými bramborami", category:"oběd", desc:"Čt+víkend (týden 2). Vaří se na 3 dny.",
     martinMacros:{kcal:525,p:49,f:11,c:61}, wifeMacros:{kcal:420,p:38,f:8,c:50},
-    ingredients:["180 g kuřecího masa","300 g brambor","15 g hořčice","10 g medu"],
-    steps:["Brambory a kuře peč s medovo-hořčičnou šťávou"], note: ESTIMATE_NOTE },
+    ingredients:["Denně: Kuřecí prsa 180 g, 300 g bramobr, 15 g hořčice, 10 g med, 7 g oleje","Manž. denně: Kuřecí prsa 130 g, 220 g bramobr, 10 g hořčice, 7 g med, 5 g oleje"],
+    steps:["Brambory nakrájej na menší kostky nebo měsíčky. Promíchej je s olejem, solí, pepřem a trochou sladké papriky.",
+           "Dej je na plech a peč asi 20 minut na 200 °C.",
+           "Mezitím nakrájej kuře na nudličky.",
+           "Smíchej hořčici, med, česnek, trochu pepře a cca 50–70 ml vody. Vznikne řídká marináda/šťáva.",
+           "Po 20 minutách přidej kuře k bramborám a všechno promíchej s hořčičnou směsí.",
+           "Vrať do trouby na dalších 15–20 minut při 200 °C. Kuře by mělo být hotové, ale nepéct zbytečně dlouho, aby se nevysušilo.",
+           "Po upečení rozděl do 6 krabiček podle porcí. Šťávu z plechu rozděl mezi krabičky také – právě ta pomůže, aby bylo kuře po ohřátí šťavnaté.",
+      "Celkem na 3 dny: 930 g kuřete, 1,56 kg brambor, 65 g hořčice, 51 g medu a 36 g oleje"], note: ESTIMATE_NOTE },
 
-  D2: { name:"Zapečené toasty se sýrem", category:"večeře", desc:"Zapečené toasty.",
+  D2: { name:"Zapečené toasty se sýrem a šunkou", category:"večeře", desc:"Pátek. Menší porce – oběd ten den je v restauraci mimo evidenci.",
     martinMacros:{kcal:232,p:12,f:7,c:28}, wifeMacros:{kcal:222,p:18,f:7,c:25},
-    ingredients:["2 toasty","25 g Eidam 30%"],
-    steps:["Zapeč toasty se sýrem"], note: ESTIMATE_NOTE },
-  D4: { name:"Těstovinový salát s vejci", category:"večeře", desc:"Těstoviny s vejci a sýrem.",
+    ingredients:["Denně: 2 toasty, 25 g Eidam 30% (bez šunky)","Manž. denně: 2 toasty, 15 g Eidam 30%, 30 g šunka"],
+    steps:["Zapeč toasty se sýrem. Zeleninu nakrájej k zakousnutí"], note: ESTIMATE_NOTE },
+  D4: { name:"Změnit - Těstovinový salát s vejci", category:"večeře", desc:"Víkend (týden 2 a 4). Vaří se na 2 dny.",
     martinMacros:{kcal:475,p:31,f:17,c:48}, wifeMacros:{kcal:410,p:28,f:12,c:47},
-    ingredients:["55 g těstovin","1 vejce natvrdo","45 g Eidam 30%","50 g jogurtu"],
-    steps:["Uvař těstoviny a vejce, smíchej se sýrem"], note: ESTIMATE_NOTE },
-  D5: { name:"Namazání z krabičky (Žervé pomazánka)", category:"večeře", desc:"Pomazánka na chlebu.",
+    ingredients:["Denně: 55 g těstovin (syrový stav), 1 vejce natvrdo, 45 g Eidam 30%, 50 g bílého jogurt, lžička hořčice","Manž. denně: 55 g těstovin, 1 vejce natvrdo, 30 g Eidam 30%, 25 g šunka, 50 g bílého jogurt, lžička hořčice"],
+    steps:["Uvař těstoviny a vejce, smíchej se sýrem (a šunkou jen u manželky)"], note: ESTIMATE_NOTE },
+  D5: { name:"Namazání z krabičky (Žervé pomazánka)", category:"večeře", desc:"Po–St, týden 1 a 3.",
     martinMacros:{kcal:320,p:28,f:13,c:31}, wifeMacros:{kcal:280,p:25,f:9,c:32},
-    ingredients:["68 g pomazánky","2 krajíce chleba","200 g zeleniny"],
-    steps:["Rozmaž pomazánku na chlebu, podávej se zeleninou"], note: ESTIMATE_NOTE },
-  D6: { name:"Fazolová quesadilla", category:"večeře", desc:"Tortilla s fazolovou náplní.",
+    ingredients:["Denně: 68 g pomazánky, 2 krajíce chleba, 20g Eidam 30 % (bez šunky)","Manž. denně: 68 g pomazánky, 2 krajíce chleba, 30 g šunka"],
+    steps:["K oběma přidej 200 g čerstvé zeleniny. Pomazánka = 250 g tvarohu, 160 g žervé"], note: ESTIMATE_NOTE },
+  D6: { name:"Fazolová quesadilla", category:"večeře", desc:"Víkend (týden 1 a 3). Vaří se na 2 dny.",
     martinMacros:{kcal:450,p:26,f:18,c:50}, wifeMacros:{kcal:340,p:21,f:14,c:36},
-    ingredients:["150 g fazolové náplně","1 tortilla","200 g salátu"],
-    steps:["Náplň na tortillu, opeč a podávej se salátem"], note: ESTIMATE_NOTE },
-  D9: { name:"Cottage Cheese Toast naslano", category:"večeře", desc:"Toast s cottage sýrem.",
+    ingredients:["Denně: 150 g fazolové náplně, 1 tortilla (střední)","Manž. denně: 120 g náplně, 1 tortilla (menší)"],
+    steps:["Náplň na 4 porce je 400 g červených fazolí, 150 g kukuřice, 200 g Eidam 30 %",
+      "Opeč a podávej s 200 g salátu"], note: ESTIMATE_NOTE },
+  D9: { name:"Cottage Cheese Toast naslano", category:"večeře", desc:"Po–St, týden 2 a 4.",
     martinMacros:{kcal:334,p:20,f:9,c:40}, wifeMacros:{kcal:334,p:20,f:9,c:40},
-    ingredients:["75 g cottage","20 g goudy","2 krajíce chleba"],
-    steps:["Dej cottage a goudu na chléb, zapeč v troubě"], note: ESTIMATE_NOTE },
+    ingredients:["Denně: 75 g cottage, 20 g gouda, oregano, 2 krajíce chleba","Manž. denně: 75 g cottage, 20 g gouda, oregano, 2 krajíce chleba"],
+    steps:["Celkem na 2 dny: 450 g cottage, 12 plátků chleba, 120 g goudy, oregano",
+      "Na základ smíchej cottage, goudu, jarní cibulku a oregano. Směs dej na plátek kvalitního kváskového chleba a zapeč v troubě asi 10 minut při 180 °C, dokud povrch nezezlátne."], note: ESTIMATE_NOTE },
 };
 
-const DAYS = ["Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota", "Neděle"];
-const MEAL_TYPES = ["breakfast", "lunch", "snack", "dinner"];
-const MEAL_LABELS = { breakfast: "🌅 Snídaně", lunch: "☀️ Oběd", snack: "🍎 Svačina", dinner: "🌙 Večeře" };
+function d(breakfast, lunch, snack2, dinner) { return { breakfast, lunch, snack2, dinner }; }
 
-// ── HELPERS ───────────────────────────────────────────────────────────
+const WEEKS = [
+  { label:"Týden 1", note:"Po+Út: toast+jogurt/piškoty → kuře na rajčatech → tuňák/žervé | St+Čt: jogurt+sýr → nudličky | Pá: kaše+puding → toasty | Víkend: nudličky + quesadilla",
+    days:[
+      { label:"Po", ...d("B2","L8","S3","D5") },
+      { label:"Út", ...d("B2","L8","S3","D5") },
+      { label:"St", ...d("B5","L8","S2","D5") },
+      { label:"Čt", ...d("B5t","L3","S2","ORDER") },
+      { label:"Pá", ...d("B5",null,"S8","D2") },
+      { label:"So", ...d("B10","L3","S6","D6") },
+      { label:"Ne", ...d("B7","L3","S6","D6") },
+    ]},
+  { label:"Týden 2", note:"Po+Út: toast+jogurt/piškoty → losos → tuňák | St+Čt: jogurt+sýr → losos/těstoviny | Pá: kaše+puding → toasty | Víkend: těstoviny se špenátem + těst. salát",
+    days:[
+      { label:"Po", ...d("B2","L9","S3","D9") },
+      { label:"Út", ...d("B2","L9","S3","D9") },
+      { label:"St", ...d("B5","L9","S2","D9") },
+      { label:"Čt", ...d("B5t","L7","S2","ORDER") },
+      { label:"Pá", ...d("B5",null,"S8","D2") },
+      { label:"So", ...d("B10","L7","S6","D4") },
+      { label:"Ne", ...d("B6","L7","S6","D4") },
+    ]},
+  { label:"Týden 3", note:"Po+Út: toast+jogurt/piškoty → gyros → žervé | St+Čt: jogurt+sýr → gyros/kuličky | Pá: kaše+puding → toasty | Víkend: kuličky s pyré + quesadilla",
+    days:[
+      { label:"Po", ...d("B2","L6","S3","D5") },
+      { label:"Út", ...d("B2","L6","S3","D5") },
+      { label:"St", ...d("B5","L6","S2","D5") },
+      { label:"Čt", ...d("B5t","L1","S2","ORDER") },
+      { label:"Pá", ...d("B5",null,"S8","D2") },
+      { label:"So", ...d("B10","L1","S6","D6") },
+      { label:"Ne", ...d("B8","L1","S6","D6") },
+    ]},
+  { label:"Týden 4", note:"Po+Út: toast+jogurt/piškoty → kari → tuňák | St+Čt: jogurt+sýr → kari/chilli | Pá: kaše+puding → toasty | Víkend: hovězí chilli + těst. salát",
+    days:[
+      { label:"Po", ...d("B2","L5","S3","D9") },
+      { label:"Út", ...d("B2","L5","S3","D9") },
+      { label:"St", ...d("B5","L5","S2","D9") },
+      { label:"Čt", ...d("B5t","L4","S2","ORDER") },
+      { label:"Pá", ...d("B5",null,"S8","D2") },
+      { label:"So", ...d("B10","L4","S6","D4") },
+      { label:"Ne", ...d("B9","L4","S6","D4") },
+    ]},
+];
+
+// Pevný všednodenní blok (toast+jogurt/piškoty Po/Út, jogurt+sýr St, menší jogurt/sýr Čt, kaše+puding Pá) je stejný každý týden.
+// "jogurt" = 1 kg řeckého jogurtu 0% + cca 77 g whey vmíchaného najednou – kupuj jogurt a whey zvlášť, namíchá se doma.
+const SHOPPING_WEEKS = [
+  { label:"Týden 1", sub:"Toast/jogurt/kaše + kuře na rajčatech → žervé, víkend: vepřové nudličky + quesadilla", categories:{
+      "🥩 Maso a ryby": ["Kuřecí prsa (na rajčatech) 900 g","Vepřová kýta (nudličky, víkend + čtvrtek) 870 g","Šunka od kosti (jen manželka) 210 g"],
+      "🥛 Mléčné a vejce": ["Eidam 30% 670 g","Vejce – 14 ks (z toho 3 volská)","Nízkotučný tvaroh 500 g","Žervé – 160 g",
+        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
+      "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Těstoviny 600 g","Rýže syrová 420 g","Ovesné vločky 120 g","Bagely – 2 ks","Tortilla velká – 2 ks","Tortilla malá – 2 ks"],
+      "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
+        "Lesní ovoce – čerstvé nebo mražené 900 g","Čerstvé ovoce (do pudinku, kaše) cca 340 g + dle chuti k lívancům","Banány – 4 ks","Vlašské ořechy 90 g",
+        "Červené fazole 400 g","Kukuřice 150 g","Passata (protlak) – cca 375 g","Olivový olej cca 33 g (na restování kuřecích kousků)","Sójová omáčka 45 ml"],
+    }},
+  { label:"Týden 2", sub:"Toast/jogurt/kaše + losos → tuňák, víkend: zapečené těstoviny se špenátem + těstovinový salát", categories:{
+      "🥩 Maso a ryby": ["Losos 1 155 g","Kuřecí prsa (zapečené těstoviny, víkend + čtvrtek) 765 g","Tuňák ve vlastní šťávě (slitý) – cca 200 g","Šunka od kosti (jen manželka) 170 g"],
+      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 16 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g",
+        "Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Krupice na kaši 95 g"],
+      "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Těstoviny 721 g","Ovesné vločky 120 g","Bagely – 2 ks"],
+      "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
+        "Brambory syrové – cca 966 g","Rajčata 600 g","Mražený špenát 750 g","Lesní ovoce – čerstvé nebo mražené 900 g","Čerstvé ovoce (do pudinku, kaše) cca 480 g","Banány – 4 ks","Vlašské ořechy 90 g",
+        "Hořčice, cibulka/okurka (do tuňákové pomazánky)"],
+    }},
+  { label:"Týden 3", sub:"Toast/jogurt/kaše + gyros → žervé, víkend: kuřecí kuličky s pyré + quesadilla", categories:{
+      "🥩 Maso a ryby": ["Kuřecí prsa (gyros) 795 g","Mletá kuřecí prsa (kuličky, víkend + čtvrtek) 840 g","Šunka od kosti (jen manželka) 210 g"],
+      "🥛 Mléčné a vejce": ["Eidam 30% 670 g","Vejce – 14 ks (z toho 3 volská)","Nízkotučný tvaroh 500 g","Žervé 160 g",
+        "Řecký jogurt 0% tuku – 1,31 kg","Whey protein – cca 240 g","Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Hladká mouka 80 g"],
+      "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Bulgur syrový 720 g","Ovesné vločky 120 g","Bagely – 2 ks","Tortilla velká – 2 ks","Tortilla malá – 2 ks"],
+      "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
+        "Brambory syrové – cca 1,35 kg","Lesní ovoce – čerstvé nebo mražené 900 g","Čerstvé ovoce (do pudinku, kaše) cca 340 g + dle chuti k lívancům","Banány – 4 ks","Vlašské ořechy 90 g",
+        "Červené fazole 400 g","Kukuřice 150 g","Gyros koření"],
+    }},
+  { label:"Týden 4", sub:"Toast/jogurt/kaše + kari → hovězí chilli, víkend: hovězí chilli + těstovinový salát", categories:{
+      "🥩 Maso a ryby": ["Kuřecí prsa (kari) 735 g","Mleté hovězí libové 930 g","Tuňák ve vlastní šťávě (slitý) – cca 200 g","Šunka od kosti (jen manželka) 170 g"],
+      "🥛 Mléčné a vejce": ["Eidam 30% 560 g","Vejce – 12 ks (z toho 3 volská)","Nízkotučný tvaroh (na tuňákovou pomazánku) 250 g","Řecký jogurt 0% tuku – 1,31 kg","Bílý jogurt 100 g","Whey protein – cca 270 g",
+        "Piškoty 70 g","Cornflakes 131 g","Proteinový pudink 200 g – 2 ks","Krupice na kaši 95 g"],
+      "🍞 Pečivo a přílohy": ["Toastový chléb – 12 ks","Žitný/klasický chléb – 12 plátků","Rýže syrová 660 g","Ovesné vločky 120 g","Bagely – 2 ks","Těstoviny 235 g"],
+      "🥦 Zelenina a spíž": ["Čerstvá zelenina a salát – cca 5,6 kg (paprika, mrkev, okurka, cherry rajčata, polníček, baby špenát)",
+        "Passata (protlak) – cca 450 g","Fazole 660 g","Červená čočka 240 g","Kokosové mléko light 300 ml","Čerstvé ovoce (do pudinku, kaše) cca 480 g","Banány – 4 ks","Vlašské ořechy 90 g","Chilli koření / sladká paprika",
+        "Hořčice, cibulka/okurka (do tuňákové pomazánky)"],
+    }},
+];
+
+const MARTIN_TARGET = { kcalMin: 1750, kcalMax: 1900, pMin: 130, pMax: 145 };
+const WIFE_TARGET = { kcalMin: 1550, kcalMax: 1700, pMin: 100, pMax: 115 };
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function MacroBadge({ label, value, color }) {
   return (
     <span style={{
@@ -172,7 +288,7 @@ function RecipeModal({ recipeKey, onClose }) {
             <MacroBadge label="S" value={r.wifeMacros.c + "g"} color="#7c3aed" />
           </div>
         </div>
-        <h4 style={{ margin: "0 0 8px", color: "#374151" }}>🛒 Ingredience</h4>
+        <h4 style={{ margin: "0 0 8px", color: "#374151" }}>🛒 Porce</h4>
         <ul style={{ margin: "0 0 16px", paddingLeft: 20, color: "#374151" }}>
           {r.ingredients.map((ing, i) => <li key={i} style={{ marginBottom: 4, fontSize: 14 }}>{ing}</li>)}
         </ul>
@@ -190,121 +306,58 @@ function RecipeModal({ recipeKey, onClose }) {
   );
 }
 
-function DayMacros({ meals }) {
+const MEAL_LABELS = { breakfast: "🌅 Snídaně", lunch: "☀️ Oběd", snack2: "🍎 Svačina", dinner: "🌙 Večeře" };
+const MEAL_KEYS = ["breakfast", "lunch", "snack2", "dinner"];
+
+function DayMacros({ day }) {
   let mP = 0, mK = 0, wP = 0, wK = 0;
-  Object.values(meals).forEach(key => {
+  MEAL_KEYS.forEach(mk => {
+    const key = day[mk];
     if (!key || !RECIPES[key]) return;
     const r = RECIPES[key];
     mP += r.martinMacros.p; mK += r.martinMacros.kcal;
     wP += r.wifeMacros.p; wK += r.wifeMacros.kcal;
   });
+  const mKok = mK >= MARTIN_TARGET.kcalMin && mK <= MARTIN_TARGET.kcalMax;
+  const mPok = mP >= MARTIN_TARGET.pMin && mP <= MARTIN_TARGET.pMax;
+  const wKok = wK >= WIFE_TARGET.kcalMin && wK <= WIFE_TARGET.kcalMax;
+  const wPok = wP >= WIFE_TARGET.pMin && wP <= WIFE_TARGET.pMax;
   return (
     <div style={{ fontSize: 11, marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <span style={{ color: "#16a34a", fontWeight: 700 }}>M: {mK} kcal, {mP}g B</span>
-      <span style={{ color: "#9333ea", fontWeight: 600 }}>Ž: {wK} kcal, {wP}g B</span>
-    </div>
-  );
-}
-
-function MealSelector({ dayIndex, mealType, selectedRecipe, onSelect }) {
-  const [showPicker, setShowPicker] = useState(false);
-  const recipes = Object.entries(RECIPES).filter(([_, r]) => r.category === (mealType === "snack" ? "svačina" : mealType === "breakfast" ? "snídaně" : mealType === "lunch" ? "oběd" : "večeře"));
-  
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <button onClick={() => setShowPicker(!showPicker)} style={{
-        width: "100%", textAlign: "left", padding: "10px 12px", border: "1px solid #e2e8f0",
-        borderRadius: 8, background: selectedRecipe ? "#f0fdf4" : "#fff", cursor: "pointer",
-        fontSize: 13, fontWeight: 500, color: "#374151"
-      }}>
-        {selectedRecipe ? (RECIPES[selectedRecipe]?.name || "Vybrat recept") : `${MEAL_LABELS[mealType]} - Vybrat recept`}
-      </button>
-      {showPicker && (
-        <div style={{ marginTop: 4, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", zIndex: 10, position: "relative" }}>
-          {recipes.map(([key, r]) => (
-            <button key={key} onClick={() => { onSelect(key); setShowPicker(false); }} style={{
-              width: "100%", textAlign: "left", padding: "10px 12px", border: "none",
-              borderBottom: "1px solid #f1f5f9", background: selectedRecipe === key ? "#ecfdf5" : "#fff",
-              cursor: "pointer", fontSize: 13, color: "#374151"
-            }}>
-              <div style={{ fontWeight: 500 }}>{r.name}</div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>M: {r.martinMacros.kcal} kcal · Ž: {r.wifeMacros.kcal} kcal</div>
-            </button>
-          ))}
-        </div>
-      )}
+      <span style={{ color: mKok ? "#16a34a" : "#dc2626", fontWeight: 700 }}>M: {mK} kcal</span>
+      <span style={{ color: mPok ? "#16a34a" : "#dc2626", fontWeight: 700 }}>{mP}g B</span>
+      <span style={{ color: wKok ? "#16a34a" : "#dc2626", fontWeight: 600 }}>Ž: {wK} kcal</span>
+      <span style={{ color: wPok ? "#16a34a" : "#dc2626", fontWeight: 600 }}>{wP}g B</span>
     </div>
   );
 }
 
 function App() {
-  const [mealPlan, setMealPlan] = useState(() => {
-    try {
-      const saved = localStorage.getItem("mealPlan");
-      return saved ? JSON.parse(saved) : Array(7).fill(null).map(() => ({
-        breakfast: null, lunch: null, snack: null, dinner: null
-      }));
-    } catch {
-      return Array(7).fill(null).map(() => ({
-        breakfast: null, lunch: null, snack: null, dinner: null
-      }));
-    }
-  });
+  const [activeWeek, setActiveWeek] = useState(0);
   const [activeTab, setActiveTab] = useState("plan");
   const [openRecipe, setOpenRecipe] = useState(null);
   const [checked, setChecked] = useState({});
-
-  useEffect(() => {
-    localStorage.setItem("mealPlan", JSON.stringify(mealPlan));
-  }, [mealPlan]);
-
   const toggleCheck = k => setChecked(p => ({ ...p, [k]: !p[k] }));
+  const week = WEEKS[activeWeek];
 
-  const updateMeal = (dayIndex, mealType, recipeKey) => {
-    const newPlan = [...mealPlan];
-    newPlan[dayIndex] = { ...newPlan[dayIndex], [mealType]: recipeKey };
-    setMealPlan(newPlan);
-  };
-
-  const aggregateIngredients = useMemo(() => {
-    const ingredients = {};
-    mealPlan.forEach(dayMeals => {
-      Object.values(dayMeals).forEach(recipeKey => {
-        if (!recipeKey || !RECIPES[recipeKey]) return;
-        const recipe = RECIPES[recipeKey];
-        recipe.ingredients.forEach(ing => {
-          ingredients[ing] = (ingredients[ing] || 0) + 1;
-        });
-      });
+  const recipesByCat = useMemo(() => {
+    const cats = {};
+    Object.entries(RECIPES).forEach(([key, r]) => {
+      if (!cats[r.category]) cats[r.category] = [];
+      cats[r.category].push({ key, ...r });
     });
-    return ingredients;
-  }, [mealPlan]);
+    return cats;
+  }, []);
 
-  const shoppingList = useMemo(() => {
-    const grouped = {};
-    Object.entries(aggregateIngredients).forEach(([ing, count]) => {
-      const category = ing.includes("g") || ing.includes("ml") ? "🥩 Maso/ryby/vejce" :
-                       ing.includes("chleb") || ing.includes("toast") || ing.includes("bagel") || ing.includes("tortilla") ? "🍞 Pečivo" :
-                       ing.includes("mouka") || ing.includes("cornflakes") || ing.includes("ovoce") || ing.includes("bulgur") || ing.includes("rýž") || ing.includes("těstoviny") || ing.includes("čočka") || ing.includes("fazole") ? "🌾 Obiloviny/obilniny" :
-                       "🥦 Ostatní";
-      if (!grouped[category]) grouped[category] = [];
-      grouped[category].push({ ingredient: ing, count });
-    });
-    return grouped;
-  }, [aggregateIngredients]);
-
-  const resetPlan = () => {
-    setMealPlan(Array(7).fill(null).map(() => ({
-      breakfast: null, lunch: null, snack: null, dinner: null
-    })));
-    setChecked({});
-  };
+  const catEmoji = { "snídaně": "🌅", "svačina": "🍎", "oběd": "☀️", "večeře": "🌙" };
 
   return (
     <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
       <div style={{ background: "linear-gradient(135deg,#065f46 0%,#0f766e 100%)", color: "#fff", padding: "20px 20px 0" }}>
-        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800 }}>🍽️ Konstruktor Jídelníčku</h1>
-        <p style={{ margin: "0 0 16px", opacity: 0.8, fontSize: 13 }}>Vyber recepty pro každý den a vytvoř si svůj vlastní plán. Aplikace pak automaticky vygeneruje seznam nákupu.</p>
+        <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>4 týdny · snídaně+svačina na 2 dny dopředu · jen odpolední svačina</div>
+        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800 }}>🍽️ Měsíční jídelníček</h1>
+        <p style={{ margin: "0 0 4px", opacity: 0.8, fontSize: 13 }}>Martin: 1 750–1 900 kcal / 130–145 g B (bez šunky, bez tofu)</p>
+        <p style={{ margin: "0 0 16px", opacity: 0.8, fontSize: 13 }}>Manželka: 1 550–1 700 kcal / 100–115 g B (šunka u vybraných jídel)</p>
         <div style={{ display: "flex", gap: 4 }}>
           {[["plan", "📅 Plán"], ["recipes", "👨‍🍳 Recepty"], ["shopping", "🛒 Nákup"]].map(([t, label]) => (
             <button key={t} onClick={() => setActiveTab(t)} style={{
@@ -317,32 +370,51 @@ function App() {
         </div>
       </div>
 
-      <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ padding: 16, maxWidth: 800, margin: "0 auto" }}>
 
         {activeTab === "plan" && (
           <>
-            <div style={{ marginBottom: 16 }}>
-              <button onClick={resetPlan} style={{
-                padding: "8px 16px", borderRadius: 8, border: "1px solid #dc2626",
-                background: "#fee2e2", color: "#dc2626", fontWeight: 600, cursor: "pointer", fontSize: 13
-              }}>🗑️ Vymazat plán</button>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+              {WEEKS.map((w, i) => (
+                <button key={i} onClick={() => setActiveWeek(i)} style={{
+                  padding: "7px 16px", borderRadius: 20, border: "2px solid",
+                  borderColor: activeWeek === i ? "#065f46" : "#e2e8f0",
+                  background: activeWeek === i ? "#065f46" : "#fff",
+                  color: activeWeek === i ? "#fff" : "#374151",
+                  fontWeight: 600, fontSize: 13, cursor: "pointer",
+                }}>{w.label}</button>
+              ))}
             </div>
-            {DAYS.map((day, dayIndex) => (
-              <div key={dayIndex} style={{ background: "#fff", borderRadius: 14, marginBottom: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", overflow: "hidden" }}>
+            <div style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#065f46" }}>
+              🟢 Zelená = v cíli &nbsp;|&nbsp; 🔴 Červená = mimo cíl &nbsp;|&nbsp; {week.note}
+            </div>
+            {week.days.map((day, di) => (
+              <div key={di} style={{ background: "#fff", borderRadius: 14, marginBottom: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", overflow: "hidden" }}>
                 <div style={{
-                  background: dayIndex >= 5 ? "#fef3c7" : "#f0fdf4",
-                  padding: "12px 16px", borderBottom: "1px solid #f1f5f9",
+                  background: day.label === "So" || day.label === "Ne" ? "#fef3c7" : "#f0fdf4",
+                  padding: "10px 16px", borderBottom: "1px solid #f1f5f9",
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
-                  <span style={{ fontWeight: 700, fontSize: 15, color: "#1e293b" }}>{day}</span>
-                  <DayMacros meals={mealPlan[dayIndex]} />
+                  <span style={{ fontWeight: 700, fontSize: 15, color: "#1e293b" }}>{day.label}</span>
+                  <DayMacros day={day} />
                 </div>
-                <div style={{ padding: "16px" }}>
-                  {MEAL_TYPES.map(mealType => (
-                    <MealSelector key={mealType} dayIndex={dayIndex} mealType={mealType}
-                      selectedRecipe={mealPlan[dayIndex][mealType]}
-                      onSelect={key => updateMeal(dayIndex, mealType, key)} />
-                  ))}
+                <div style={{ padding: "10px 16px" }}>
+                  {MEAL_KEYS.map((mk, mi) => {
+                    const key = day[mk];
+                    return (
+                      <div key={mk} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, paddingBottom: 8, borderBottom: mi !== MEAL_KEYS.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                        <span style={{ fontSize: 12, color: "#94a3b8", width: 68, flexShrink: 0 }}>{MEAL_LABELS[mk]}</span>
+                        {key === null
+                          ? <span style={{ fontSize: 13, color: "#94a3b8", fontStyle: "italic" }}>🍴 Restaurace</span>
+                          : key === "ORDER"
+                            ? <span style={{ fontSize: 13, color: "#b45309", fontStyle: "italic" }}>📦 Objednáno (mimo evidenci)</span>
+                            : key === undefined
+                              ? <span style={{ fontSize: 13, color: "#94a3b8", fontStyle: "italic" }}>— vynecháno</span>
+                              : <button onClick={() => setOpenRecipe(key)} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 12px", fontSize: 13, cursor: "pointer", color: "#065f46", fontWeight: 500, textAlign: "left" }}>{RECIPES[key]?.name}</button>
+                        }
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -351,65 +423,65 @@ function App() {
 
         {activeTab === "recipes" && (
           <>
-            {["snídaně", "oběd", "svačina", "večeře"].map(cat => {
-              const recipes = Object.entries(RECIPES).filter(([_, r]) => r.category === cat);
-              return (
-                <div key={cat} style={{ marginBottom: 20 }}>
-                  <h2 style={{ fontSize: 17, color: "#1e293b", margin: "0 0 10px" }}>
-                    {cat === "snídaně" ? "🌅" : cat === "oběd" ? "☀️" : cat === "svačina" ? "🍎" : "🌙"} {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </h2>
-                  {recipes.map(([key, r]) => (
-                    <div key={key} onClick={() => setOpenRecipe(key)} style={{ background: "#fff", borderRadius: 12, marginBottom: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", padding: "14px 16px", cursor: "pointer" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div>
-                          <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 15 }}>{r.name}</div>
-                          <div style={{ color: "#64748b", fontSize: 13, marginTop: 3 }}>{r.desc}</div>
-                        </div>
-                        <span style={{ color: "#94a3b8", fontSize: 20, marginLeft: 8 }}>›</span>
+            {["snídaně", "svačina", "oběd", "večeře"].map(cat => (
+              <div key={cat} style={{ marginBottom: 20 }}>
+                <h2 style={{ fontSize: 17, color: "#1e293b", margin: "0 0 10px" }}>
+                  {catEmoji[cat]} {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </h2>
+                {(recipesByCat[cat] || []).map(r => (
+                  <div key={r.key} style={{ background: "#fff", borderRadius: 12, marginBottom: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", padding: "14px 16px", cursor: "pointer" }} onClick={() => setOpenRecipe(r.key)}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 15 }}>{r.name}</div>
+                        <div style={{ color: "#64748b", fontSize: 13, marginTop: 3 }}>{r.desc}</div>
                       </div>
-                      <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, color: "#065f46", background: "#ecfdf5", borderRadius: 8, padding: "2px 8px", fontWeight: 600 }}>M: {r.martinMacros.kcal} kcal · {r.martinMacros.p}g B</span>
-                        <span style={{ fontSize: 11, color: "#9333ea", background: "#faf5ff", borderRadius: 8, padding: "2px 8px", fontWeight: 600 }}>Ž: {r.wifeMacros.kcal} kcal · {r.wifeMacros.p}g B</span>
-                      </div>
+                      <span style={{ color: "#94a3b8", fontSize: 20, marginLeft: 8 }}>›</span>
                     </div>
-                  ))}
-                </div>
-              );
-            })}
+                    <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "#065f46", background: "#ecfdf5", borderRadius: 8, padding: "2px 8px", fontWeight: 600 }}>M: {r.martinMacros.kcal} kcal · {r.martinMacros.p}g B</span>
+                      <span style={{ fontSize: 11, color: "#9333ea", background: "#faf5ff", borderRadius: 8, padding: "2px 8px", fontWeight: 600 }}>Ž: {r.wifeMacros.kcal} kcal · {r.wifeMacros.p}g B</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
           </>
         )}
 
         {activeTab === "shopping" && (
           <>
-            <div style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#065f46" }}>
-              💡 Vytvořeno z {mealPlan.flat().filter(m => m).length} vybraných jídel. Počty ingrediencí = kolikrát se vyskytují v plánu.
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+              {SHOPPING_WEEKS.map((w, i) => (
+                <button key={i} onClick={() => setActiveWeek(i)} style={{
+                  padding: "7px 16px", borderRadius: 20, border: "2px solid",
+                  borderColor: activeWeek === i ? "#065f46" : "#e2e8f0",
+                  background: activeWeek === i ? "#065f46" : "#fff",
+                  color: activeWeek === i ? "#fff" : "#374151",
+                  fontWeight: 600, fontSize: 13, cursor: "pointer",
+                }}>{w.label}</button>
+              ))}
             </div>
-            {Object.entries(shoppingList).map(([cat, items]) => (
+            <div style={{ background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#065f46" }}>
+              💡 {SHOPPING_WEEKS[activeWeek].sub} · každá potravina je na samostatném řádku
+            </div>
+            {Object.entries(SHOPPING_WEEKS[activeWeek].categories).map(([cat, items]) => (
               <div key={cat} style={{ background: "#fff", borderRadius: 12, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)", overflow: "hidden" }}>
                 <div style={{ background: "#f8fafc", padding: "10px 16px", fontWeight: 700, fontSize: 14, color: "#1e293b", borderBottom: "1px solid #f1f5f9" }}>{cat}</div>
                 <div style={{ padding: "8px 16px" }}>
                   {items.map((item, i) => {
-                    const k = cat + item.ingredient;
+                    const k = SHOPPING_WEEKS[activeWeek].label + cat + i;
                     return (
-                      <div key={i} onClick={() => toggleCheck(k)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < items.length - 1 ? "1px solid #f1f5f9" : "none", cursor: "pointer" }}>
-                        <div style={{ width: 20, height: 20, borderRadius: 6, border: "2px solid", borderColor: checked[k] ? "#065f46" : "#cbd5e1", background: checked[k] ? "#065f46" : "#fff", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div key={i} onClick={() => toggleCheck(k)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "7px 0", borderBottom: i < items.length - 1 ? "1px solid #f8fafc" : "none", cursor: "pointer" }}>
+                        <div style={{ width: 20, height: 20, borderRadius: 6, border: "2px solid", borderColor: checked[k] ? "#065f46" : "#cbd5e1", background: checked[k] ? "#065f46" : "#fff", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
                           {checked[k] && <span style={{ color: "#fff", fontSize: 12 }}>✓</span>}
                         </div>
-                        <div style={{ fontSize: 14, color: "#374151", textDecoration: checked[k] ? "line-through" : "none", opacity: checked[k] ? 0.5 : 1, flex: 1 }}>
-                          {item.ingredient}
-                          {item.count > 1 && <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6 }}>({item.count}x)</span>}
-                        </div>
+                        <span style={{ fontSize: 14, color: "#374151", textDecoration: checked[k] ? "line-through" : "none", opacity: checked[k] ? 0.5 : 1 }}>{item}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
             ))}
-            {Object.keys(shoppingList).length === 0 && (
-              <div style={{ background: "#fff", borderRadius: 12, padding: 20, textAlign: "center", color: "#94a3b8" }}>
-                Vyberi recepty v plánu a seznam nákupu se automaticky vygeneruje.
-              </div>
-            )}
           </>
         )}
       </div>
@@ -417,6 +489,7 @@ function App() {
     </div>
   );
 }
+
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
